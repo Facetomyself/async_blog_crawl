@@ -1,0 +1,28 @@
+{
+    "id": 21,
+    "category": "Kubernetes",
+    "category_id": 6,
+    "tags": [
+        {
+            "id": 4,
+            "name": "容器"
+        },
+        {
+            "id": 9,
+            "name": "经验总结"
+        }
+    ],
+    "title": "k8s集群状态与日志查看",
+    "abstract": "当k8s集群出现问题后，首要工作便是通过日志排查问题原因，本文详细介绍了k8s集群各个组件日志的查询方法。",
+    "cover": "https://oss.cuiliangblog.cn/articleCover/2020_11_01_19_40_47_367718.jpg",
+    "body": "## 一、状态查看\r\n\r\n### 1. 查看 Pod 状态以及运行节点\r\n\r\nkubectl get pods -o wide\r\nkubectl -n kube-system get pods -o wide\r\n\r\n### 2. 查看 Pod 事件\r\n\r\nkubectl describe pod <pod-name>\r\n\r\n### 3. 查看 Node 状态\r\n\r\nkubectl get nodes\r\nkubectl describe node <node-name>\r\n\r\n\r\n## 二、日志查看\r\n\r\n### 1. kube-apiserver 日志\r\n\r\nPODNAME=$(kubectl -n kube-system get pod -l component=kube-apiserver -o\r\njsonpath='{.items[0].metadata.name}')\r\nkubectl -n kube-system logs $PODNAME --tail 100\r\n\r\n- 以上命令操作假设控制平面以 Kubernetes 静态 Pod 的形式来运行。如果\r\n  kube-apiserver 是用 systemd 管理的，则需要登录到 master 节点上，然后使用\r\n  journalctl -u kube-apiserver 查看其日志。\r\n\r\n### 2. kube-controller-manager 日志\r\n\r\nPODNAME=$(kubectl -n kube-system get pod -l\r\ncomponent=kube-controller-manager -o jsonpath='{.items[0].metadata.name}')\r\nkubectl -n kube-system logs $PODNAME --tail 100\r\n\r\n- 以上命令操作假设控制平面以 Kubernetes 静态 Pod 的形式来运行。如果\r\n  kube-controller-manager 是用 systemd 管理的，则需要登录到 master\r\n  节点上，然后使用 journalctl -u kube-controller-manager 查看其日志。\r\n\r\n### 3. kube-scheduler 日志\r\n\r\nPODNAME=$(kubectl -n kube-system get pod -l component=kube-scheduler -o\r\njsonpath='{.items[0].metadata.name}')\r\nkubectl -n kube-system logs $PODNAME --tail 100\r\n\r\n- 以上命令操作假设控制平面以 Kubernetes 静态 Pod 的形式来运行。如果\r\n  kube-scheduler 是用 systemd 管理的，则需要登录到 master 节点上，然后使用\r\n  journalctl -u kube-scheduler 查看其日志。\r\n\r\n### 4. kube-dns 日志\r\n\r\nkube-dns 通常以 Addon 的方式部署，每个 Pod 包含三个容器，最关键的是 kubedns\r\n容器的日志：\r\nPODNAME=$(kubectl -n kube-system get pod -l k8s-app=kube-dns -o\r\njsonpath='{.items[0].metadata.name}')\r\nkubectl -n kube-system logs $PODNAME -c kubedns\r\n\r\n### 5. Kubelet 日志\r\n\r\nKubelet 通常以 systemd 管理。查看 Kubelet 日志需要首先 SSH 登录到 Node\r\n上，推荐使用 kubectl-node-shell而不是为每个节点分配公网 IP 地址。比如：··\r\n\r\n```bash\r\n[root@localhost ~]# cat kubectl-node_shell\r\n#!/bin/sh\r\nif [ -z \"$1\" ]; then\r\n  echo \"Please specify node name\"\r\n  exit 1\r\nfi\r\n\r\nNODE=\"$1\"\r\nIMAGE=\"alpine\"\r\nPOD=\"nsenter-$(env LC_CTYPE=C tr -dc a-z0-9 < /dev/urandom | head -c 6)\"\r\nNAMESPACE=\"\"\r\n\r\n# Check the node\r\nkubectl get node \"$NODE\" >/dev/null || exit 1\r\n\r\nOVERRIDES=\"$(cat <<EOT\r\n{\r\n  \"spec\": {\r\n    \"nodeName\": \"$NODE\",\r\n    \"hostPID\": true,\r\n    \"containers\": [\r\n      {\r\n        \"securityContext\": {\r\n          \"privileged\": true\r\n        },\r\n        \"image\": \"$IMAGE\",\r\n        \"name\": \"nsenter\",\r\n        \"stdin\": true,\r\n        \"stdinOnce\": true,\r\n        \"tty\": true,\r\n        \"command\": [ \"nsenter\", \"--target\", \"1\", \"--mount\", \"--uts\", \"--ipc\", \"--net\", \"--pid\", \"--\", \"bash\", \"-l\" ]\r\n      }\r\n    ]\r\n  }\r\n}\r\nEOT\r\n)\"\r\n\r\necho \"spawning \\\"$POD\\\" on \\\"$NODE\\\"\"\r\nkubectl run --namespace \"$NAMESPACE\" --rm --image alpine --overrides=\"$OVERRIDES\" --generator=run-pod/v1 -ti \"$POD\"\r\nchmod +x ./kubectl-node_shell\r\nsudo mv ./kubectl-node-shell /usr/local/bin/kubectl-node_shell\r\n[root@localhost ~]# ./kubectl-node_shell localhost.localdomain\r\nspawning \"nsenter-i71opm\" on \"localhost.localdomain\"\r\nIf you don't see a command prompt, try pressing enter.\r\n[root@localhost /]# journalctl -l -u kubelet\r\n```\r\n\r\n### 6. Kube-proxy 日志\r\n\r\nKube-proxy 通常以 DaemonSet 的方式部署，可以直接用 kubectl 查询其日志\r\n$ kubectl -n kube-system get pod -l component=kube-proxy\r\nNAME READY STATUS RESTARTS AGE\r\nkube-proxy-42zpn 1/1 Running 0 1d\r\nkube-proxy-7gd4p 1/1 Running 0 3d\r\nkube-proxy-87dbs 1/1 Running 0 4d\r\n$ kubectl -n kube-system logs kube-proxy-42zpn",
+    "view": 1465,
+    "like": 2,
+    "collect": 0,
+    "comment": 0,
+    "created_time": "2020-11-29T20:51:26.560283+08:00",
+    "modified_time": "2025-08-30T16:32:54.518729+08:00",
+    "is_recommend": false,
+    "is_release": true,
+    "author": 1
+}
