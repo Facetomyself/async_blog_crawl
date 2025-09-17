@@ -1,17 +1,18 @@
 from pydantic import BaseModel, Field
 from fastapi import APIRouter
 
+from config.settings import MONITOR_DEFAULT_INTERVAL
 from src.services.monitor import monitor_manager
 
 
 class StartRequest(BaseModel):
-    interval_seconds: int = Field(3600, ge=1, description="监控间隔秒数")
+    interval_seconds: int = Field(MONITOR_DEFAULT_INTERVAL, ge=1, description="监控间隔秒数")
     offline: bool = Field(False, description="是否使用离线样例数据")
     crawl_on_update: bool = Field(True, description="检测到更新时是否执行完整抓取")
 
 
 class IntervalRequest(BaseModel):
-    interval_seconds: int = Field(..., ge=1)
+    interval_seconds: int = Field(MONITOR_DEFAULT_INTERVAL, ge=1)
 
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])

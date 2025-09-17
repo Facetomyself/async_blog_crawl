@@ -1,7 +1,7 @@
-from pathlib import Path
+﻿from pathlib import Path
 from typing import Dict, Any, List, Tuple, Set
 
-from config.settings import CLASSIFY_FILE, MONTH_DATA_DIR, CONTENT_DATA_DIR, IMAGES_DIR
+from config.settings import CLASSIFY_FILE, MONTH_DATA_DIR, CONTENT_DATA_DIR, IMAGES_DIR, MIN_MARKDOWN_BYTES, MIN_META_BYTES
 
 
 class Verifier:
@@ -105,8 +105,8 @@ class Verifier:
         for t, i in expected:
             md = CONTENT_DATA_DIR / f"{t}_{i}.md"
             meta = CONTENT_DATA_DIR / f"{t}_{i}_meta.json"
-            has_md = md.exists() and md.stat().st_size > 100
-            has_meta = meta.exists() and meta.stat().st_size > 10
+            has_md = md.exists() and md.stat().st_size > MIN_MARKDOWN_BYTES
+            has_meta = meta.exists() and meta.stat().st_size > MIN_META_BYTES
 
             broken: List[str] = []
             if has_md:
@@ -142,3 +142,4 @@ class Verifier:
         if detail:
             summary["issues"] = issues
         return summary
+

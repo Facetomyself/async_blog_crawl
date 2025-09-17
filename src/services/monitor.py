@@ -8,12 +8,13 @@ from src.crawler.month_data_fetcher import MonthDataFetcher
 from src.crawler.content_fetcher import ContentFetcher
 from src.utils.http_client import AsyncHTTPClient, LocalHTTPClient, AbstractHTTPClient
 from src.utils.logger import crawler_logger
+from config.settings import MONITOR_DEFAULT_INTERVAL
 
 
 @dataclass
 class MonitorState:
     running: bool = False
-    interval_seconds: int = 3600
+    interval_seconds: int = MONITOR_DEFAULT_INTERVAL
     offline: bool = False
     crawl_on_update: bool = True
     cycles: int = 0
@@ -31,7 +32,7 @@ class MonitorManager:
     def _make_client(self) -> AbstractHTTPClient:
         return LocalHTTPClient() if self._state.offline else AsyncHTTPClient()
 
-    async def start(self, interval_seconds: int = 3600, offline: bool = False, crawl_on_update: bool = True) -> Dict[str, Any]:
+    async def start(self, interval_seconds: int = MONITOR_DEFAULT_INTERVAL, offline: bool = False, crawl_on_update: bool = True) -> Dict[str, Any]:
         async with self._lock:
             self._state.interval_seconds = max(1, int(interval_seconds))
             self._state.offline = bool(offline)
