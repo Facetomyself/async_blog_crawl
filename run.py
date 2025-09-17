@@ -3,7 +3,6 @@
 博客爬虫启动脚本
 """
 import sys
-import os
 from pathlib import Path
 
 # 添加src目录到Python路径
