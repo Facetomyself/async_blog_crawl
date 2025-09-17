@@ -31,6 +31,8 @@ venv/
 env/
 ENV/
 html_agent/
+.venv/
+uv.lock
 
 # IDE
 .vscode/

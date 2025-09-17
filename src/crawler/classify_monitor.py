@@ -1,8 +1,7 @@
 """
-分类接口监控器
+分类接口监控
 """
 import hashlib
-from pathlib import Path
 from typing import Dict, Any, Optional
 
 from config.settings import CLASSIFY_URL, CLASSIFY_FILE
@@ -27,7 +26,6 @@ class ClassifyMonitor(BaseCrawler):
 
             # 获取最新数据
             data = await self.http_client.get(self.classify_url)
-
             if not data:
                 return self._create_result(False, error="获取分类数据失败")
 
@@ -60,9 +58,11 @@ class ClassifyMonitor(BaseCrawler):
     async def _has_changed(self, current_hash: str) -> bool:
         """检查数据是否发生变化"""
         if self.last_hash is None:
-            # 首次运行，加载之前保存的哈希
+            # 首次运行，尝试加载历史哈希；若无历史记录则视为变化
             self.last_hash = await self._load_last_hash()
-            return True  # 首次运行认为有变化
+            if self.last_hash is None:
+                return True
+            return current_hash != self.last_hash
 
         return current_hash != self.last_hash
 
@@ -74,7 +74,6 @@ class ClassifyMonitor(BaseCrawler):
 
             # 读取现有数据计算哈希
             existing_data = await self._load_json(self.classify_file)
-
             if existing_data:
                 return self._calculate_hash(existing_data)
 
@@ -86,3 +85,4 @@ class ClassifyMonitor(BaseCrawler):
     async def get_classify_data(self) -> Optional[Dict[str, Any]]:
         """获取分类数据"""
         return await self._load_json(self.classify_file)
+
