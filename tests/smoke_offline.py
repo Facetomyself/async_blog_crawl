@@ -21,7 +21,7 @@ async def run_once() -> Tuple[int, int]:
     mf.http_client = client
     months = await mf.crawl()
     assert months.success, f"months failed: {months.error}"
-    total_months = months.data.get("total_months", 0)
+    total_months = months.data.get("total_months", 0)  # pyright: ignore[reportOptionalMemberAccess]
     print(f"months total: {total_months}")
 
     # 3) Content
@@ -29,8 +29,8 @@ async def run_once() -> Tuple[int, int]:
     cf.http_client = client
     content = await cf.crawl()
     assert content.success, f"content failed: {content.error}"
-    total_items = content.data.get("total_items", 0)
-    skipped = sum(1 for v in content.data.get("results", {}).values() if v.get("skipped"))
+    total_items = content.data.get("total_items", 0) # pyright: ignore[reportOptionalMemberAccess]
+    skipped = sum(1 for v in content.data.get("results", {}).values() if v.get("skipped")) # pyright: ignore[reportOptionalMemberAccess]
     print(f"content total: {total_items}, skipped: {skipped}")
     return total_items, skipped
 

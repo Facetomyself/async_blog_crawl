@@ -2,9 +2,8 @@
 日志管理器
 """
 import sys
-from pathlib import Path
 from loguru import logger
-from config.settings import LOGS_DIR, LOG_LEVEL, LOG_FORMAT, LOG_MAX_SIZE, LOG_BACKUP_COUNT
+from config.settings import LOGS_DIR, LOG_LEVEL, LOG_MAX_SIZE, LOG_BACKUP_COUNT
 
 
 def setup_logger():
