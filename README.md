@@ -101,3 +101,21 @@ python main.py --port 8000 --reload
 - 图片下载失败不影响主要内容获取
 - 日志位于 `logs/`，控制台与文件双输出，轮转 10MB×5
 
+
+
+# 监控接口
+
+```bash
+# 启动监控（每 60 秒，离线调试，检测到更新时执行全量抓取）
+curl -X POST http://127.0.0.1:8000/monitor/start -H "content-type: application/json" ^
+  -d '{"interval_seconds":60,"offline":true,"crawl_on_update":true}'
+
+# 查询状态
+curl http://127.0.0.1:8000/monitor/status
+
+# 修改间隔
+curl -X POST http://127.0.0.1:8000/monitor/interval -H "content-type: application/json" -d '{"interval_seconds":300}'
+
+# 停止监控
+curl -X POST http://127.0.0.1:8000/monitor/stop
+```
